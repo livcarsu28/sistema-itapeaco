@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itapê Aço - Sistema de Pedidos</title>
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .mobile-container {
+            max-width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-whatsapp {
+            background-color: #25D366;
+            color: white;
+        }
+        .btn-whatsapp:hover {
+            background-color: #128C7E;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .calendar-container {
+            height: 600px;
+        }
+        
+        /* Small screens */
+        @media (max-width: 640px) {
+            .calendar-container {
+                height: 500px;
+            }
+            .fc .fc-toolbar-title {
+                font-size: 1.2rem;
+            }
+            .fc .fc-col-header-cell-cushion {
+                font-size: 0.8rem;
+            }
+            .fc .fc-toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .fc .fc-toolbar-title {
+                font-size: 1.1rem;
+                margin: 0.5rem 0;
+            }
+            .fc .fc-button {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            .fc .fc-col-header-cell-cushion {
+                font-size: 0.7rem;
+                padding: 0.2rem;
+            }
+            .fc .fc-daygrid-day-frame {
+                min-height: 3rem;
+            }
+            /* Form adjustments */
+            #pedido-form input, 
+            #pedido-form select {
+                font-size: 0.9rem;
+                padding: 0.6rem;
+            }
+            /* Radio button group */
+            .flex.space-x-4 {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <!-- Página de Login -->
+        <div id="login-page" class="p-4">
+            <div class="max-w-md mx-auto mt-10 p-6 card">
+                <div class="text-center mb-8">
+                    <img src="img/logo.png" alt="Logo Itapê Aço - Empresa especializada em telhas e estruturas metálicas"
+                        class="mx-auto h-24 object-contain" >
+                    <h1 class="text-2xl font-bold mt-4">Sistema de Pedidos</h1>
+                </div>
+                
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Selecione o setor:</label>
+                        <select id="user-type" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">-- Selecione --</option>
+                            <option value="vendas">Vendas</option>
+                            <option value="producao">Produção</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="username" class="block text-sm font-medium mb-1">Usuário:</label>
+                        <input type="text" id="username" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Seu usuário" required>
+                    </div>
+                    
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-1">Senha:</label>
+                        <input type="password" id="password" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Sua senha" required>
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary p-3 rounded-md font-medium">Entrar</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Página de Vendas -->
+        <div id="vendas-page" class="hidden p-4">
+            <div class="max-w-4xl mx-auto mb-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Sistema de Pedidos - Vendas</h2>
+                    <div>
+                        <button id="view-calendar-btn" class="text-sm btn-primary px-3 py-1 rounded mr-2">Calendário</button>
+                        <button id="logout-btn" class="text-sm text-blue-600 hover:text-blue-800">Sair</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Aba de Cadastro de Pedidos -->
+            <div id="vendas-cadastro" class="max-w-4xl mx-auto">
+                <div class="max-w-md mx-auto p-6 card mb-8">
+                    <form id="pedido-form" class="space-y-4">
+                        <input type="hidden" id="pedido-id">
+                        <div>
+                            <label for="pedido-numero" class="block text-sm font-medium mb-1">Número do Pedido:</label>
+                            <input type="text" id="pedido-numero" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required minlength="3">
+                            <p id="pedido-numero-error" class="text-red-500 text-xs mt-1 hidden">Mínimo 3 caracteres</p>
+                        </div>
+                        
+                        <div>
+                            <label for="vendedor" class="block text-sm font-medium mb-1">Vendedor:</label>
+                            <input type="text" id="vendedor" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Tipo de Entrega:</label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center">
+                                    <input type="radio" name="tipo-entrega" value="retirada" class="mr-2" checked> Retirada
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tipo-entrega" value="entrega" class="mr-2"> Entrega
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tipo-entrega" value="sem-prazo" class="mr-2"> Sem prazo
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="data-entrega" class="block text-sm font-medium mb-1">Data de Entrega:</label>
+                            <input type="date" id="data-entrega" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled>
+                            <p id="data-entrega-error" class="text-red-500 text-xs mt-1 hidden">Data inválida</p>
+                        </div>
+                        
+                        <div>
+                            <label for="cidade-entrega" class="block text-sm font-medium mb-1">Cidade de Entrega:</label>
+                            <input type="text" id="cidade-entrega" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="metragem" class="block text-sm font-medium mb-1">Metragem (m²):</label>
+                            <input type="number" id="metragem" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0.01" step="0.01" required>
+                            <p id="metragem-error" class="text-red-500 text-xs mt-1 hidden">Valor deve ser maior que zero</p>
+                        </div>
+                        
+                        <div>
+                            <label for="tipo-telha" class="block text-sm font-medium mb-1">Tipo de Telha:</label>
+                            <select id="tipo-telha" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                <option value="">-- Selecione --</option>
+                                <option value="simples">Simples</option>
+                                <option value="sanduiche">Sanduíche</option>
+                                <option value="semi-sanduiche">Semi-sanduíche</option>
+                                <option value="forro">Forro</option>
+                            </select>
+                            <p id="tipo-telha-error" class="text-red-500 text-xs mt-1 hidden">Selecione um tipo</p>
+                        </div>
+                        
+                        <div>
+                            <label for="pintura" class="block text-sm font-medium mb-1">Tem pintura?</label>
+                            <select id="pintura" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="nao">Não</option>
+                                <option value="sim">Sim</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="ferragem" class="block text-sm font-medium mb-1">Tem ferragem?</label>
+                            <select id="ferragem" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                <option value="nao">Não</option>
+                                <option value="sim">Sim</option>
+                            </select>
+                        </div>
+                        
+                        <div class="pt-4 flex space-x-2">
+                            <button type="submit" class="w-full btn-primary p-3 rounded-md font-medium" id="save-btn">Salvar Pedido</button>
+                            <button type="button" class="w-full btn-danger p-3 rounded-md font-medium hidden" id="cancel-edit-btn">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="max-w-md mx-auto p-6 card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">Pedidos Recentes</h3>
+                        <button id="refresh-orders-btn" class="text-blue-500 hover:text-blue-700">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <div id="recent-orders" class="space-y-4">
+                        <!-- Os pedidos serão adicionados aqui via JavaScript -->
+                        <p class="text-center text-gray-500">Nenhum pedido recente</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Aba de Calendário (inicialmente oculta) -->
+            <div id="vendas-calendario" class="max-w-4xl mx-auto hidden">
+                <div class="p-4 card calendar-container mb-4">
+                    <div id="calendar-vendas" class="h-full"></div>
+                </div>
+                
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Pendente</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Produzido</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-gray-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Entregue</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Página de Produção -->
+        <div id="producao-page" class="hidden p-4">
+            <div class="max-w-4xl mx-auto mb-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">Calendário de Produção</h2>
+                    <div>
+                        <button id="logout-btn-prod" class="text-sm text-blue-600 hover:text-blue-800 mr-4">Sair</button>
+                        <button id="toggle-view-btn" class="text-sm btn-primary px-3 py-1 rounded">Modo Lista</button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center mt-4 space-x-4">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Pendente</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Produzido</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-gray-500 rounded-full mr-2"></div>
+                        <span class="text-sm">Entregue</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="calendar-container" class="max-w-4xl mx-auto p-4 card calendar-container">
+                <div id="calendar" class="h-full"></div>
+            </div>
+            
+            <div id="list-container" class="max-w-4xl mx-auto p-4 card hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-100 text-left text-sm">
+                                <th class="p-3">Nº Pedido</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3">Cidade</th>
+                                <th class="p-3">Metragem</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Vendedor</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-list">
+                            <!-- Os pedidos serão adicionados aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="order-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Detalhes do Pedido</h3>
+                        <button id="close-details-modal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+                    
+                    <div id="order-details-content" class="space-y-3">
+                        <!-- Detalhes serão preenchidos aqui -->
+                    </div>
+                    
+                    <div class="mt-6 space-y-3">
+                        <div id="date-change-section">
+                            <label class="block text-sm font-medium">Alterar Data de Entrega:</label>
+                            <input type="date" id="new-delivery-date" class="w-full p-2 border rounded">
+                        </div>
+                        
+                        <label class="block text-sm font-medium">Alterar Status:</label>
+                        <select id="status-select" class="w-full p-2 border rounded">
+                            <option value="pendente">Pendente</option>
+                            <option value="produzido">Produzido</option>
+                            <option value="entregue">Entregue</option>
+                        </select>
+                        
+                        <div class="flex space-x-2">
+                            <button id="save-status-btn" class="btn-primary p-2 rounded-md w-full">Salvar</button>
+                            <button id="whatsapp-btn" class="btn-whatsapp p-2 rounded-md w-full flex items-center justify-center">
+                                <i class="bi bi-whatsapp mr-2"></i> WhatsApp
+                            </button>
+                            <button id="delete-order-btn" class="btn-danger p-2 rounded-md w-full flex items-center justify-center">
+                                <i class="bi bi-trash mr-2"></i> Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.min.js"></script>
+    <!-- Toastify for notifications -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <script>
+        // Armazenar pedidos localmente (será substituído por backend)
+        let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+        let currentUser = null;
+        let isEditing = false;
+        let currentEditingId = null;
+        
+        // DOM Elements
+        const loginPage = document.getElementById('login-page');
+        const vendasPage = document.getElementById('vendas-page');
+        const producaoPage = document.getElementById('producao-page');
+        const loginForm = document.getElementById('login-form');
+        const pedidoForm = document.getElementById('pedido-form');
+        const recentOrders = document.getElementById('recent-orders');
+        const refreshOrdersBtn = document.getElementById('refresh-orders-btn');
+        const viewCalendarBtn = document.getElementById('view-calendar-btn');
+        const vendasCadastro = document.getElementById('vendas-cadastro');
+        const vendasCalendario = document.getElementById('vendas-calendario');
+        
+        // Variáveis do calendário
+        let calendar, calendarVendas;
+        const calendarEl = document.getElementById('calendar');
+        const calendarVendasEl = document.getElementById('calendar-vendas');
+        const calendarContainer = document.getElementById('calendar-container');
+        const listContainer = document.getElementById('list-container');
+        const ordersList = document.getElementById('orders-list');
+        const toggleViewBtn = document.getElementById('toggle-view-btn');
+        let calendarView = true;
+        
+        // Elementos de modal
+        const orderDetailsModal = document.getElementById('order-details-modal');
+        const orderDetailsContent = document.getElementById('order-details-content');
+        const closeDetailsModal = document.getElementById('close-details-modal');
+        const statusSelect = document.getElementById('status-select');
+        const saveStatusBtn = document.getElementById('save-status-btn');
+        const whatsappBtn = document.getElementById('whatsapp-btn');
+        const deleteOrderBtn = document.getElementById('delete-order-btn');
+        const newDeliveryDate = document.getElementById('new-delivery-date');
+        let currentOrderId = null;
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login form
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Logout buttons
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('logout-btn-prod').addEventListener('click', logout);
+            
+            // Pedido form
+            pedidoForm.addEventListener('submit', savePedido);
+            document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
+            refreshOrdersBtn.addEventListener('click', loadRecentOrders);
+            viewCalendarBtn.addEventListener('click', toggleVendasView);
+            
+            // Form validation
+            document.getElementById('pedido-numero').addEventListener('input', validatePedidoNumero);
+            document.getElementById('metragem').addEventListener('input', validateMetragem);
+            document.getElementById('tipo-telha').addEventListener('change', validateTipoTelha);
+            
+            // Tipo de entrega radio buttons
+            document.querySelectorAll('input[name="tipo-entrega"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const dataEntregaField = document.getElementById('data-entrega');
+                    dataEntregaField.disabled = this.value === 'sem-prazo';
+                    if (this.value === 'sem-prazo') {
+                        dataEntregaField.value = '';
+                    }
+                });
+            });
+            
+            // Toggle view button
+            toggleViewBtn.addEventListener('click', toggleView);
+            
+            // Modal events
+            closeDetailsModal.addEventListener('click', closeModal);
+            saveStatusBtn.addEventListener('click', updateOrderStatus);
+            whatsappBtn.addEventListener('click', sendWhatsApp);
+            deleteOrderBtn.addEventListener('click', deleteOrder);
+            
+            // Inicializar os calendários
+            initCalendar();
+            initCalendarVendas();
+            
+            // Carregar pedidos recentes
+            loadRecentOrders();
+        });
+
+        // Funções de validação
+        function validatePedidoNumero() {
+            const input = document.getElementById('pedido-numero');
+            const error = document.getElementById('pedido-numero-error');
+            
+            if (input.value.length < 3 && input.value.length > 0) {
+                error.classList.remove('hidden');
+                return false;
+            } else {
+                error.classList.add('hidden');
+                return true;
+            }
+        }
+
+        function validateMetragem() {
+            const input = document.getElementById('metragem');
+            const error = document.getElementById('metragem-error');
+            
+            if (input.value <= 0) {
+                error.classList.remove('hidden');
+                return false;
+            } else {
+                error.classList.add('hidden');
+                return true;
+            }
+        }
+
+        function validateTipoTelha() {
+            const input = document.getElementById('tipo-telha');
+            const error = document.getElementById('tipo-telha-error');
+            
+            if (!input.value) {
+                error.classList.remove('hidden');
+                return false;
+            } else {
+                error.classList.add('hidden');
+                return true;
+            }
+        }
+
+        function validateOrderForm() {
+            const isValidNumero = validatePedidoNumero();
+            const isValidMetragem = validateMetragem();
+            const isValidTipoTelha = validateTipoTelha();
+            
+            return isValidNumero && isValidMetragem && isValidTipoTelha;
+        }
+
+        // Funções principais
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const userType = document.getElementById('user-type').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!userType || !username || !password) {
+                showAlert('Preencha todos os campos para fazer login', 'error');
+                return;
+            }
+            
+            // Verificar credenciais
+            if (userType === 'producao') {
+                if (username !== 'Itapeaco_prod' || password !== '987654') {
+                    showAlert('Usuário ou senha incorretos para produção', 'error');
+                    return;
+                }
+            } else if (userType === 'vendas') {
+                if (username !== 'Itapeaco_vendas' || password !== '123456') {
+                    showAlert('Usuário ou senha incorretos para vendas', 'error');
+                    return;
+                }
+            }
+            
+            // Login bem-sucedido
+            currentUser = { 
+                type: userType, 
+                username,
+                token: 'simulated-token' // Em produção, viria do backend
+            };
+            
+            if (userType === 'vendas') {
+                loginPage.classList.add('hidden');
+                vendasPage.classList.remove('hidden');
+                producaoPage.classList.add('hidden');
+                document.getElementById('date-change-section').classList.add('hidden');
+                
+                // Mostrar a aba de cadastro inicialmente
+                vendasCadastro.classList.remove('hidden');
+                vendasCalendario.classList.add('hidden');
+                
+                // Atualizar calendário de vendas
+                updateCalendarVendasEvents();
+            } else if (userType === 'producao') {
+                loginPage.classList.add('hidden');
+                producaoPage.classList.remove('hidden');
+                vendasPage.classList.add('hidden');
+                document.getElementById('date-change-section').classList.remove('hidden');
+                
+                // Atualizar visualizações
+                updateCalendarEvents();
+                updateOrdersList();
+            }
+            
+            // Limpar formulário
+            loginForm.reset();
+            showAlert('Login realizado com sucesso');
+        }
+
+        function logout() {
+            currentUser = null;
+            vendasPage.classList.add('hidden');
+            producaoPage.classList.add('hidden');
+            loginPage.classList.remove('hidden');
+            showAlert('Você saiu do sistema');
+            cancelEdit();
+        }
+
+        function toggleVendasView() {
+            if (vendasCadastro.classList.contains('hidden')) {
+                // Mostrar cadastro
+                vendasCadastro.classList.remove('hidden');
+                vendasCalendario.classList.add('hidden');
+                viewCalendarBtn.textContent = 'Calendário';
+            } else {
+                // Mostrar calendário
+                vendasCadastro.classList.add('hidden');
+                vendasCalendario.classList.remove('hidden');
+                viewCalendarBtn.textContent = 'Cadastro';
+                updateCalendarVendasEvents();
+            }
+        }
+
+        function savePedido(e) {
+            e.preventDefault();
+            
+            if (!validateOrderForm()) {
+                showAlert('Corrija os erros no formulário', 'error');
+                return;
+            }
+            
+            const tipoEntrega = document.querySelector('input[name="tipo-entrega"]:checked').value;
+            const dataEntrega = tipoEntrega === 'sem-prazo' ? null : document.getElementById('data-entrega').value;
+            const cidadeEntrega = document.getElementById('cidade-entrega').value.trim();
+            const vendedor = document.getElementById('vendedor').value.trim();
+            
+            if (isEditing) {
+                // Atualizar pedido existente
+                const index = pedidos.findIndex(p => p.id === currentEditingId);
+                if (index !== -1) {
+                    pedidos[index] = {
+                        ...pedidos[index],
+                        numero: document.getElementById('pedido-numero').value.trim(),
+                        vendedor,
+                        tipoEntrega,
+                        dataEntrega,
+                        cidadeEntrega,
+                        metragem: parseFloat(document.getElementById('metragem').value),
+                        tipoTelha: document.getElementById('tipo-telha').value,
+                        pintura: document.getElementById('pintura').value === 'sim',
+                        ferragem: document.getElementById('ferragem').value === 'sim'
+                    };
+                    
+                    localStorage.setItem('pedidos', JSON.stringify(pedidos));
+                    
+                    showAlert('Pedido atualizado com sucesso!');
+                    cancelEdit();
+                }
+            } else {
+                // Criar novo pedido
+                const novoPedido = {
+                    id: Date.now(),
+                    numero: document.getElementById('pedido-numero').value.trim(),
+                    vendedor,
+                    tipoEntrega,
+                    dataEntrega,
+                    cidadeEntrega,
+                    metragem: parseFloat(document.getElementById('metragem').value),
+                    tipoTelha: document.getElementById('tipo-telha').value,
+                    pintura: document.getElementById('pintura').value === 'sim',
+                    ferragem: document.getElementById('ferragem').value === 'sim',
+                    status: 'pendente',
+                    criadoEm: new Date().toISOString(),
+                    usuario: currentUser.username,
+                    dataAlteracao: null,
+                    usuarioAlteracao: null
+                };
+                
+                pedidos.push(novoPedido);
+                localStorage.setItem('pedidos', JSON.stringify(pedidos));
+                
+                // Resetar formulário
+                pedidoForm.reset();
+                document.getElementById('data-entrega').disabled = false;
+                
+                showAlert('Pedido cadastrado com sucesso!');
+            }
+            
+            // Atualizar listas
+            loadRecentOrders();
+            if (currentUser.type === 'producao') {
+                updateCalendarEvents();
+                updateOrdersList();
+            } else {
+                updateCalendarVendasEvents();
+            }
+        }
+
+        function editOrder(orderId) {
+            const order = pedidos.find(p => p.id === orderId);
+            if (!order) return;
+            
+            isEditing = true;
+            currentEditingId = orderId;
+            
+            // Preencher formulário com os dados do pedido
+            document.getElementById('pedido-id').value = order.id;
+            document.getElementById('pedido-numero').value = order.numero;
+            document.getElementById('vendedor').value = order.vendedor || '';
+            document.querySelector(`input[name="tipo-entrega"][value="${order.tipoEntrega}"]`).checked = true;
+            document.getElementById('data-entrega').value = order.dataEntrega || '';
+            document.getElementById('data-entrega').disabled = order.tipoEntrega === 'sem-prazo';
+            document.getElementById('cidade-entrega').value = order.cidadeEntrega || '';
+            document.getElementById('metragem').value = order.metragem;
+            document.getElementById('tipo-telha').value = order.tipoTelha;
+            document.getElementById('pintura').value = order.pintura ? 'sim' : 'nao';
+            document.getElementById('ferragem').value = order.ferragem ? 'sim' : 'nao';
+            
+            // Alterar botão para "Atualizar"
+            document.getElementById('save-btn').textContent = 'Atualizar Pedido';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            
+            // Rolagem suave para o formulário
+            document.getElementById('pedido-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            isEditing = false;
+            currentEditingId = null;
+            
+            // Resetar formulário
+            pedidoForm.reset();
+            document.getElementById('data-entrega').disabled = false;
+            document.getElementById('pedido-id').value = '';
+            
+            // Restaurar botão para "Salvar"
+            document.getElementById('save-btn').textContent = 'Salvar Pedido';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        function loadRecentOrders() {
+            // Limpar lista atual
+            recentOrders.innerHTML = '';
+            
+            if (pedidos.length === 0) {
+                recentOrders.innerHTML = '<p class="text-center text-gray-500">Nenhum pedido recente</p>';
+                return;
+            }
+            
+            // Ordenar por data (mais recente primeiro)
+            const sortedPedidos = [...pedidos].sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+            
+            // Mostrar apenas os últimos 5
+            const recentes = sortedPedidos.slice(0, 5);
+            
+            recentes.forEach(pedido => {
+                addRecentOrder(pedido);
+            });
+        }
+
+        function addRecentOrder(pedido) {
+            // Se for a mensagem "Nenhum pedido recente", removê-la
+            if (recentOrders.querySelector('p.text-center')) {
+                recentOrders.innerHTML = '';
+            }
+            
+            const statusColor = pedido.status === 'pendente' ? 'bg-blue-500' : 
+                              pedido.status === 'produzido' ? 'bg-green-500' : 'bg-gray-500';
+            
+            const orderDiv = document.createElement('div');
+            orderDiv.className = 'border rounded-md p-3 hover:bg-gray-50';
+            orderDiv.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center">
+                            <span class="font-medium">Pedido #${pedido.numero}</span>
+                            <span class="ml-2 text-xs ${statusColor} text-white px-2 py-0.5 rounded-full">${pedido.status}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${pedido.tipoTelha.charAt(0).toUpperCase() + pedido.tipoTelha.slice(1)}</div>
+                        <div class="text-sm text-gray-600">Vend: ${pedido.vendedor || 'N/A'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-medium">${pedido.metragem}m²</div>
+                        <div class="text-sm text-gray-600">${pedido.dataEntrega ? formatDate(pedido.dataEntrega) : 'Sem data'}</div>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-2 space-x-2">
+                    <button class="text-blue-500 hover:text-blue-700 text-sm" data-id="${pedido.id}" data-action="edit">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button class="text-red-500 hover:text-red-700 text-sm" data-id="${pedido.id}" data-action="delete">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </div>
+            `;
+            
+            // Adicionar event listeners para os botões
+            orderDiv.querySelector('[data-action="edit"]').addEventListener('click', function() {
+                editOrder(parseInt(this.getAttribute('data-id')));
+            });
+            
+            orderDiv.querySelector('[data-action="delete"]').addEventListener('click', function() {
+                if (confirm('Tem certeza que deseja excluir este pedido?')) {
+                    deleteOrder(parseInt(this.getAttribute('data-id')));
+                }
+            });
+            
+            recentOrders.prepend(orderDiv);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Sem data';
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            return new Date(dateString).toLocaleDateString('pt-BR', options);
+        }
+
+        function initCalendar() {
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                views: {
+                    timeGridWeek: {
+                        type: 'timeGrid',
+                        duration: { days: 7 },
+                        buttonText: 'Semana'
+                    },
+                    listWeek: {
+                        type: 'list',
+                        duration: { days: 7 },
+                        buttonText: 'Lista'
+                    }
+                },
+                eventClick: function(info) {
+                    showOrderDetails(info.event.id);
+                },
+                eventDidMount: function(info) {
+                    // Adicionar tooltip
+                    info.el.setAttribute('title', buildEventTooltip(info.event));
+                },
+                events: []
+            });
+            
+            calendar.render();
+        }
+
+        function initCalendarVendas() {
+            calendarVendas = new FullCalendar.Calendar(calendarVendasEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                views: {
+                    timeGridWeek: {
+                        type: 'timeGrid',
+                        duration: { days: 7 },
+                        buttonText: 'Semana'
+                    },
+                    listWeek: {
+                        type: 'list',
+                        duration: { days: 7 },
+                        buttonText: 'Lista'
+                    }
+                },
+                eventClick: function(info) {
+                    showOrderDetails(info.event.id);
+                },
+                eventDidMount: function(info) {
+                    // Adicionar tooltip
+                    info.el.setAttribute('title', buildEventTooltip(info.event));
+                },
+                events: []
+            });
+            
+            calendarVendas.render();
+        }
+
+        function buildEventTooltip(event) {
+            const props = event.extendedProps;
+            return `
+                Pedido #${event.title.split('#')[1]}
+                Vendedor: ${props.vendedor || 'N/A'}
+                Cidade: ${props.cidade || '-'}
+                Metragem: ${props.metragem}m²
+                Tipo: ${props.tipoTelha}
+                Ferragem: ${props.ferragem ? 'Sim' : 'Não'}
+            `;
+        }
+
+        function updateCalendarEvents() {
+            const events = pedidos.map(pedido => {
+                let backgroundColor;
+                switch (pedido.status) {
+                    case 'produzido':
+                        backgroundColor = '#10b981'; // green-500
+                        break;
+                    case 'entregue':
+                        backgroundColor = '#6b7280'; // gray-500
+                        break;
+                    default:
+                        backgroundColor = '#3b82f6'; // blue-500
+                }
+                
+                return {
+                    id: pedido.id,
+                    title: `Pedido #${pedido.numero}`,
+                    start: pedido.dataEntrega || undefined,
+                    allDay: true,
+                    backgroundColor,
+                    extendedProps: {
+                        vendedor: pedido.vendedor,
+                        cidade: pedido.cidadeEntrega,
+                        metragem: pedido.metragem,
+                        tipoTelha: pedido.tipoTelha,
+                        ferragem: pedido.ferragem,
+                        status: pedido.status,
+                        dataOriginal: pedido.dataEntrega,
+                        dataAlteracao: pedido.dataAlteracao
+                    }
+                };
+            });
+            
+            calendar.removeAllEvents();
+            calendar.addEventSource(events);
+        }
+
+        function updateCalendarVendasEvents() {
+            const events = pedidos.map(pedido => {
+                let backgroundColor;
+                switch (pedido.status) {
+                    case 'produzido':
+                        backgroundColor = '#10b981'; // green-500
+                        break;
+                    case 'entregue':
+                        backgroundColor = '#6b7280'; // gray-500
+                        break;
+                    default:
+                        backgroundColor = '#3b82f6'; // blue-500
+                }
+                
+                return {
+                    id: pedido.id,
+                    title: `Pedido #${pedido.numero}`,
+                    start: pedido.dataEntrega || undefined,
+                    allDay: true,
+                    backgroundColor,
+                    extendedProps: {
+                        vendedor: pedido.vendedor,
+                        cidade: pedido.cidadeEntrega,
+                        metragem: pedido.metragem,
+                        tipoTelha: pedido.tipoTelha,
+                        ferragem: pedido.ferragem,
+                        status: pedido.status
+                    }
+                };
+            });
+            
+            calendarVendas.removeAllEvents();
+            calendarVendas.addEventSource(events);
+        }
+
+        function updateOrdersList() {
+            ordersList.innerHTML = '';
+            
+            if (pedidos.length === 0) {
+                ordersList.innerHTML = '<tr><td colspan="8" class="p-3 text-center text-gray-500">Nenhum pedido cadastrado</td></tr>';
+                return;
+            }
+            
+            // Ordenar por data de entrega (mais próxima primeiro)
+            const sortedPedidos = [...pedidos].sort((a, b) => {
+                if (!a.dataEntrega && !b.dataEntrega) return 0;
+                if (!a.dataEntrega) return 1;
+                if (!b.dataEntrega) return -1;
+                return new Date(a.dataEntrega) - new Date(b.dataEntrega);
+            });
+            
+            sortedPedidos.forEach(pedido => {
+                const statusColor = pedido.status === 'pendente' ? 'text-blue-500' : 
+                                  pedido.status === 'produzido' ? 'text-green-500' : 'text-gray-500';
+                
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="p-3">${pedido.numero}</td>
+                    <td class="p-3">${pedido.dataEntrega ? formatDate(pedido.dataEntrega) : 'Sem data'}</td>
+                    <td class="p-3">${pedido.cidadeEntrega || '-'}</td>
+                    <td class="p-3">${pedido.metragem}m²</td>
+                    <td class="p-3">${pedido.tipoTelha.charAt(0).toUpperCase() + pedido.tipoTelha.slice(1)}</td>
+                    <td class="p-3">${pedido.vendedor || '-'}</td>
+                    <td class="p-3 ${statusColor}">${pedido.status.charAt(0).toUpperCase() + pedido.status.slice(1)}</td>
+                    <td class="p-3">
+                        <button class="text-blue-500 hover:text-blue-700 text-sm mr-2" data-id="${pedido.id}" data-action="details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="text-red-500 hover:text-red-700 text-sm" data-id="${pedido.id}" data-action="delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                // Adicionar event listeners para os botões
+                row.querySelector('[data-action="details"]').addEventListener('click', function() {
+                    showOrderDetails(parseInt(this.getAttribute('data-id')));
+                });
+                
+                row.querySelector('[data-action="delete"]').addEventListener('click', function() {
+                    if (confirm('Tem certeza que deseja excluir este pedido?')) {
+                        deleteOrder(parseInt(this.getAttribute('data-id')));
+                    }
+                });
+                
+                ordersList.appendChild(row);
+            });
+        }
+
+        function toggleView() {
+            calendarView = !calendarView;
+            
+            if (calendarView) {
+                calendarContainer.classList.remove('hidden');
+                listContainer.classList.add('hidden');
+                toggleViewBtn.textContent = 'Modo Lista';
+                calendar.render(); // Forçar redesenho se necessário
+            } else {
+                calendarContainer.classList.add('hidden');
+                listContainer.classList.remove('hidden');
+                toggleViewBtn.textContent = 'Modo Calendário';
+                updateOrdersList(); // Atualizar lista ao alternar
+            }
+        }
+
+        function showOrderDetails(orderId) {
+            const order = pedidos.find(p => p.id === orderId);
+            if (!order) return;
+            
+            currentOrderId = orderId;
+            newDeliveryDate.value = order.dataEntrega || '';
+            
+            // Preencher detalhes
+            orderDetailsContent.innerHTML = `
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="text-gray-500">Nº Pedido:</div>
+                    <div>${order.numero}</div>
+                    
+                    <div class="text-gray-500">Vendedor:</div>
+                    <div>${order.vendedor || 'N/A'}</div>
+                    
+                    <div class="text-gray-500">Data de Entrega:</div>
+                    <div>${order.dataEntrega ? formatDate(order.dataEntrega) : 'Sem data'}</div>
+                    
+                    ${order.dataAlteracao ? `
+                    <div class="text-gray-500">Data Original:</div>
+                    <div>${formatDate(order.dataOriginal)}</div>
+                    
+                    <div class="text-gray-500">Alterado em:</div>
+                    <div>${formatDate(order.dataAlteracao)}</div>
+                    
+                    <div class="text-gray-500">Alterado por:</div>
+                    <div>${order.usuarioAlteracao || 'N/A'}</div>
+                    ` : ''}
+                    
+                    <div class="text-gray-500">Tipo Entrega:</div>
+                    <div>${getTipoEntregaText(order.tipoEntrega)}</div>
+                    
+                    <div class="text-gray-500">Cidade:</div>
+                    <div>${order.cidadeEntrega || '-'}</div>
+                    
+                    <div class="text-gray-500">Metragem:</div>
+                    <div>${order.metragem}m²</div>
+                    
+                    <div class="text-gray-500">Tipo Telha:</div>
+                    <div>${order.tipoTelha.charAt(0).toUpperCase() + order.tipoTelha.slice(1)}</div>
+                    
+                    <div class="text-gray-500">Pintura:</div>
+                    <div>${order.pintura ? 'Sim' : 'Não'}</div>
+                    
+                    <div class="text-gray-500">Ferragem:</div>
+                    <div>${order.ferragem ? 'Sim' : 'Não'}</div>
+                    
+                    <div class="text-gray-500">Status:</div>
+                    <div>${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</div>
+                    
+                    <div class="text-gray-500">Criado por:</div>
+                    <div>${order.usuario}</div>
+                    
+                    <div class="text-gray-500">Data criação:</div>
+                    <div>${formatDate(order.criadoEm)}</div>
+                </div>
+            `;
+            
+            // Definir valor do select
+            statusSelect.value = order.status;
+            
+            // Abrir modal
+            orderDetailsModal.classList.remove('hidden');
+        }
+
+        function getTipoEntregaText(tipo) {
+            switch (tipo) {
+                case 'retirada': return 'Retirada';
+                case 'entrega': return 'Entrega';
+                case 'sem-prazo': return 'Sem prazo definido';
+                default: return tipo;
+            }
+        }
+
+        function closeModal() {
+            orderDetailsModal.classList.add('hidden');
+        }
+
+        function updateOrderStatus() {
+            const newStatus = statusSelect.value;
+            const newDate = newDeliveryDate.value;
+            const orderIndex = pedidos.findIndex(p => p.id === currentOrderId);
+            
+            if (orderIndex !== -1) {
+                const originalDate = pedidos[orderIndex].dataEntrega;
+                const dateChanged = newDate && newDate !== originalDate;
+                
+                pedidos[orderIndex].status = newStatus;
+                
+                if (dateChanged) {
+                    pedidos[orderIndex].dataOriginal = originalDate;
+                    pedidos[orderIndex].dataEntrega = newDate;
+                    pedidos[orderIndex].dataAlteracao = new Date().toISOString();
+                    pedidos[orderIndex].usuarioAlteracao = currentUser.username;
+                }
+                
+                localStorage.setItem('pedidos', JSON.stringify(pedidos));
+                
+                // Atualizar visualizações
+                updateCalendarEvents();
+                updateCalendarVendasEvents();
+                updateOrdersList();
+                loadRecentOrders();
+                
+                closeModal();
+                showAlert('Alterações salvas com sucesso');
+                
+                // Se a data foi alterada pela produção, enviar mensagem WhatsApp
+                if (dateChanged && currentUser.type === 'producao') {
+                    sendDateChangeWhatsApp(currentOrderId);
+                }
+            }
+        }
+
+        function deleteOrder(orderId = null) {
+            const idToDelete = orderId || currentOrderId;
+            if (!idToDelete) return;
+            
+            const orderIndex = pedidos.findIndex(p => p.id === idToDelete);
+            if (orderIndex !== -1) {
+                pedidos.splice(orderIndex, 1);
+                localStorage.setItem('pedidos', JSON.stringify(pedidos));
+                
+                // Atualizar visualizações
+                updateCalendarEvents();
+                updateCalendarVendasEvents();
+                updateOrdersList();
+                loadRecentOrders();
+                
+                if (orderDetailsModal.classList.contains('hidden')) {
+                    showAlert('Pedido excluído com sucesso');
+                } else {
+                    closeModal();
+                    showAlert('Pedido excluído com sucesso');
+                }
+            }
+        }
+
+        function sendWhatsApp() {
+            const order = pedidos.find(p => p.id === currentOrderId);
+            if (!order) return;
+            
+            const phone = '5511999999999'; // Deveria vir de configuração
+            const statusMap = {
+                'pendente': 'em produção',
+                'produzido': 'pronto para retirada/entrega',
+                'entregue': 'já foi entregue'
+            };
+            
+            const message = `*Itapê Aço - Atualização de Pedido* \n\n` +
+                           `Pedido: #${order.numero}\n` +
+                           `Vendedor: ${order.vendedor || 'N/A'}\n` +
+                           `Tipo: ${getTipoEntregaText(order.tipoEntrega)}\n` +
+                           `Data: ${order.dataEntrega ? formatDate(order.dataEntrega) : 'a definir'}\n` +
+                           `Status: ${statusMap[order.status] || order.status}\n\n` +
+                           `Detalhes:\n` +
+                           `- Tipo de telha: ${order.tipoTelha}\n` +
+                           `- Metragem: ${order.metragem}m²\n` +
+                           `- Ferragem: ${order.ferragem ? 'Incluída' : 'Não incluída'}\n\n` +
+                           `Agradecemos pela preferência!`;
+            
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+        }
+
+        function sendDateChangeWhatsApp(orderId) {
+            const order = pedidos.find(p => p.id === orderId);
+            if (!order || !order.dataOriginal) return;
+            
+            const phone = '5511999999999'; // Deveria vir de configuração
+            
+            const message = `*Itapê Aço - Alteração de Prazo* \n\n ` +
+                          ` Pedido: #${order.numero}\n `+
+                          ` Vendedor: ${order.vendedor || 'N/A'}\n ` +
+                          ` Data original: ${formatDate(order.dataOriginal)}\n ` +
+                          ` Nova data: ${formatDate(order.dataEntrega)}\n\n `+
+                          ` Motivo: Ajuste de programação de produção\n\n `+
+                          ` Por favor, entre em contato conosco caso esta alteração não seja adequada.\n `+
+                          ` Agradecemos pela compreensão!;`
+            
+            const encodedMessage = encodeURIComponent(message);
+            window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+        }
+
+        // Função utilitária para mostrar alertas
+        function showAlert(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'error' ? "#ef4444" : "#10b981",
+                stopOnFocus: true
+            }).showToast();
+        }
+    </script>
+</body>
+</html>
